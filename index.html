@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <title>五线谱学习</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f5f5f5;
+            padding: 10px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 20px);
+        }
+
+        .header {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .org-name {
+            text-align: center;
+            margin: 10px 0 15px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .org-name-input {
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: #333;
+            border: 2px solid transparent;
+            background: transparent;
+            text-align: center;
+            width: 300px;
+            padding: 8px 15px;
+            outline: none;
+            border-radius: 6px;
+        }
+
+        .org-name-input:hover {
+            border-color: #ddd;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .org-name-input:focus {
+            border-color: #4CAF50;
+            background: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+        }
+
+        .save-button, .info-button {
+            padding: 8px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .save-button:hover, .info-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .org-name:hover .save-button {
+            opacity: 1;
+        }
+
+        .sub-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .staff-container {
+            flex: 1;
+            background: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            border: none;
+        }
+
+        #staff-canvas {
+            width: 100%;
+            height: 100%;
+            touch-action: manipulation;
+        }
+
+        .info-display {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 10px;
+            border: none;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+        }
+
+        .info-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #f8f8f8;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            border: none;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .info-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #242424;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid #D4AF37;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #D4AF37;
+        }
+
+        .modal-text {
+            line-height: 1.6;
+            color: #D4AF37;
+        }
+
+        .modal-close .info-button {
+            background: #1a1a1a;
+            color: #D4AF37;
+            border: 1px solid #D4AF37;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close .info-button:hover {
+            background: #D4AF37;
+            color: #1a1a1a;
+            transform: scale(1.05);
+        }
+
+        @media (max-height: 600px) {
+            .container {
+                height: auto;
+            }
+            
+            .staff-container {
+                height: 250px;
+            }
+        }
+
+        .numbered-note {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dot {
+            position: absolute;
+            top: -0.7em;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="org-name">
+                <input type="text" 
+                       class="org-name-input" 
+                       value="点击此处输入机构名称" 
+                       id="orgNameInput"
+                       onfocus="handleFocus(this)"
+                       onblur="handleBlur(this)">
+                <button class="save-button" onclick="saveOrgName()">保存</button>
+            </div>
+            <div class="sub-header">
+                <button class="info-button" onclick="showModal()">创作者信息</button>
+            </div>
+        </div>
+
+        <div class="staff-container">
+            <canvas id="staff-canvas"></canvas>
+        </div>
+
+        <div class="info-display">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label">名</div>
+                    <div id="note-name" class="info-value">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">唱名</div>
+                    <div id="solfege" class="info-value">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">简谱</div>
+                    <div id="numbered" class="info-value">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="infoModal">
+        <div class="modal-content">
+            <div class="modal-title">创作者信息</div>
+            <div class="modal-text">
+                创作者：浩哥不住二龙湖<br>
+                小红书：6707751322<br>
+                抖音：67938337784
+            </div>
+            <div class="modal-close">
+                <button class="info-button" onclick="hideModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showModal() {
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function hideModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // 处理输入框获得焦点
+        function handleFocus(input) {
+            if (input.value === '点击此处输入机构名称') {
+                input.value = '';
+            }
+        }
+
+        // 处理输入框失去焦点
+        function handleBlur(input) {
+            if (input.value.trim() === '') {
+                input.value = '点击此处输入机构名称';
+            }
+        }
+
+        // 保存机构名称���本地存储
+        function saveOrgName() {
+            const input = document.getElementById('orgNameInput');
+            const orgName = input.value.trim();
+            if (orgName && orgName !== '点击此处输入机构名称') {
+                localStorage.setItem('orgName', orgName);
+                alert('机构名称已保存！');
+            }
+        }
+
+        // 页面加载时恢复保存的机构名称
+        window.addEventListener('load', function() {
+            const savedOrgName = localStorage.getItem('orgName');
+            if (savedOrgName) {
+                document.getElementById('orgNameInput').value = savedOrgName;
+            }
+        });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html> 
